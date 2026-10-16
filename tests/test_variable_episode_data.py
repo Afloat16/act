@@ -83,6 +83,19 @@ class VariableEpisodeTest(unittest.TestCase):
             self.assertEqual(tuple(actions.shape), (2, 4, 3))
             self.assertFalse(padding.any().item())
 
+    def test_single_recorded_timestep_has_finite_normalization(self):
+        with tempfile.TemporaryDirectory() as folder:
+            episodes = self.write_episodes(folder, [1])
+            stats = get_norm_stats(folder, 1)
+            for key, index in (('qpos', 0), ('action', 1)):
+                np.testing.assert_array_equal(stats[f'{key}_mean'], episodes[0][index][0])
+                np.testing.assert_allclose(stats[f'{key}_std'], np.full(3, .01))
+            dataset = EpisodicDataset([0], folder, ['top'], stats)
+            _, qpos, actions, padding = next(iter(DataLoader(dataset, batch_size=1, num_workers=0)))
+            np.testing.assert_array_equal(qpos.numpy(), np.zeros((1, 3)))
+            np.testing.assert_array_equal(actions.numpy(), np.zeros((1, 1, 3)))
+            self.assertFalse(padding.any().item())
+
 
 if __name__ == '__main__':
     unittest.main()

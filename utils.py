@@ -99,12 +99,13 @@ def get_norm_stats(dataset_dir, num_episodes):
 
     # normalize action data
     action_mean = all_action_data.mean(dim=0, keepdim=True)
-    action_std = all_action_data.std(dim=0, keepdim=True)
+    # Keep the sample estimator for multiple frames; a singleton has zero variance.
+    action_std = all_action_data.std(dim=0, keepdim=True, unbiased=all_action_data.shape[0] > 1)
     action_std = torch.clip(action_std, 1e-2, np.inf) # clipping
 
     # normalize qpos data
     qpos_mean = all_qpos_data.mean(dim=0, keepdim=True)
-    qpos_std = all_qpos_data.std(dim=0, keepdim=True)
+    qpos_std = all_qpos_data.std(dim=0, keepdim=True, unbiased=all_qpos_data.shape[0] > 1)
     qpos_std = torch.clip(qpos_std, 1e-2, np.inf) # clipping
 
     stats = {"action_mean": action_mean.numpy().squeeze(), "action_std": action_std.numpy().squeeze(),
